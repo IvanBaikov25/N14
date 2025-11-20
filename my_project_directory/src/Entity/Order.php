@@ -1,12 +1,13 @@
 <?php
+
 namespace App\Entity;
 
-use Doctrine\ORM\Mapping as ORM;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity]
-#[ORM\Table(name: 'order')]
 class Order
 {
     #[ORM\Id]
@@ -14,72 +15,55 @@ class Order
     #[ORM\Column(type: 'integer')]
     private ?int $id = null;
 
-    #[ORM\ManyToOne(targetEntity: Customer::class, inversedBy: 'orders')]
+    #[ORM\ManyToOne(targetEntity: Client::class)]
     #[ORM\JoinColumn(nullable: false)]
-    private Customer $customer;
+    #[Assert\NotNull(message: "Клиент обязателен")]
+    private Client $client;
 
-    #[ORM\Column(type: 'datetime')]
+    #[ORM\ManyToMany(targetEntity: Dish::class)]
+    #[Assert\Count(min: 1, minMessage: "В заказе должно быть хотя бы одно блюдо")]
+    private Collection $dishes;
+
+    #[ORM\Column(type: 'datetime', options: ['default' => 'CURRENT_TIMESTAMP'])]
     private \DateTimeInterface $createdAt;
-
-    #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
-    private string $total;
-
-    #[ORM\ManyToMany(targetEntity: Book::class, inversedBy: 'orders')]
-    #[ORM\JoinTable(name: 'order_book')]
-    private Collection $books;
 
     public function __construct()
     {
-        $this->books = new ArrayCollection();
-        $this->createdAt = new \DateTimeImmutable();
-        $this->total = '0.00';
+        $this->dishes = new ArrayCollection();
+        $this->createdAt = new \DateTime();
     }
 
     public function getId(): ?int
     {
         return $this->id;
     }
-    public function getCustomer(): Customer
+    public function getClient(): Client
     {
-        return $this->customer;
+        return $this->client;
     }
-    public function setCustomer(Customer $customer): self
+    public function setClient(Client $client): self
     {
-        $this->customer = $customer;
+        $this->client = $client;
+        return $this;
+    }
+    public function getDishes(): Collection
+    {
+        return $this->dishes;
+    }
+    public function addDish(Dish $dish): self
+    {
+        if (!$this->dishes->contains($dish)) {
+            $this->dishes[] = $dish;
+        }
+        return $this;
+    }
+    public function removeDish(Dish $dish): self
+    {
+        $this->dishes->removeElement($dish);
         return $this;
     }
     public function getCreatedAt(): \DateTimeInterface
     {
         return $this->createdAt;
-    }
-    public function setCreatedAt(\DateTimeInterface $createdAt): self
-    {
-        $this->createdAt = $createdAt;
-        return $this;
-    }
-    public function getTotal(): string
-    {
-        return $this->total;
-    }
-    public function setTotal(string $total): self
-    {
-        $this->total = $total;
-        return $this;
-    }
-    public function getBooks(): Collection
-    {
-        return $this->books;
-    }
-    public function addBook(Book $book): self
-    {
-        if (!$this->books->contains($book)) {
-            $this->books[] = $book;
-        }
-        return $this;
-    }
-    public function removeBook(Book $book): self
-    {
-        $this->books->removeElement($book);
-        return $this;
     }
 }

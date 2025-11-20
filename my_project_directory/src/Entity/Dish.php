@@ -1,11 +1,12 @@
 <?php
+
 namespace App\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity]
-#[ORM\Table(name: 'book')]
-class Book
+class Dish
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
@@ -13,30 +14,24 @@ class Book
     private ?int $id = null;
 
     #[ORM\Column(type: 'string', length: 255)]
-    private string $title;
+    #[Assert\NotBlank(message: "Название блюда обязательно")]
+    private string $name;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 2)]
+    #[Assert\GreaterThan(0, message: "Цена должна быть больше 0")]
     private string $price;
-
-    #[ORM\ManyToMany(targetEntity: Order::class, mappedBy: 'books')]
-    private $orders;
-
-    public function __construct()
-    {
-        $this->orders = new \Doctrine\Common\Collections\ArrayCollection();
-    }
 
     public function getId(): ?int
     {
         return $this->id;
     }
-    public function getTitle(): string
+    public function getName(): string
     {
-        return $this->title;
+        return $this->name;
     }
-    public function setTitle(string $title): self
+    public function setName(string $name): self
     {
-        $this->title = $title;
+        $this->name = $name;
         return $this;
     }
     public function getPrice(): string
@@ -47,10 +42,5 @@ class Book
     {
         $this->price = $price;
         return $this;
-    }
-
-    public function getOrders()
-    {
-        return $this->orders;
     }
 }
