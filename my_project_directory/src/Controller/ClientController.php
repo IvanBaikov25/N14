@@ -12,7 +12,7 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route('/clients')]
 class ClientController extends AbstractController
 {
-    #[Route('/', name: 'client_index', methods: ['GET'])]
+    #[Route('', name: 'client_index', methods: ['GET'])]
     public function index(ManagerRegistry $doctrine): Response
     {
         $clients = $doctrine->getRepository(Client::class)->findAll();
@@ -30,15 +30,13 @@ class ClientController extends AbstractController
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager = $doctrine->getManager();
-            $entityManager->persist($client);
-            $entityManager->flush();
+            $em = $doctrine->getManager();
+            $em->persist($client);
+            $em->flush();
             return $this->redirectToRoute('client_index');
         }
 
-        return $this->render('client/new.html.twig', [
-            'form' => $form->createView(),
-        ]);
+        return $this->render('client/new.html.twig', ['form' => $form->createView()]);
     }
 
     #[Route('/{id}/edit', name: 'client_edit', methods: ['GET', 'POST'])]
@@ -61,14 +59,29 @@ class ClientController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/delete', name: 'client_delete', methods: ['POST'])]
-    public function delete(Request $request, Client $client, ManagerRegistry $doctrine): Response
+    #[Route('/{id}', name: 'client_delete_api', methods: ['DELETE'])]
+    public function deleteApi(Client $client, ManagerRegistry $doctrine): Response
     {
-        if ($this->isCsrfTokenValid('delete' . $client->getId(), $request->request->get('_token'))) {
-            $entityManager = $doctrine->getManager();
-            $entityManager->remove($client);
-            $entityManager->flush();
+        $em = $doctrine->getManager();
+        $em->remove($client);
+        $em->flush();
+        return new Response(null, Response::HTTP_NO_CONTENT);
+    }
+
+    #[Route('/{id}', name: 'client_update_api', methods: ['PUT'])]
+    public function updateApi(Request $request, Client $client, ManagerRegistry $doctrine): Response
+    {
+        $data = json_decode($request->getContent(), true);
+        $field = $data['field'] ?? null;
+        $value = $data['value'] ?? null;
+
+        if (!$field || !in_array($field, ['name', 'phone'], true)) {
+            return new Response('Недопустимое поле', Response::HTTP_BAD_REQUEST);
         }
-        return $this->redirectToRoute('client_index');
+
+        $client->$field = $value;
+        $doctrine->getManager()->flush();
+
+        return new Response('Успешно обновлено', Response::HTTP_OK);
     }
 }

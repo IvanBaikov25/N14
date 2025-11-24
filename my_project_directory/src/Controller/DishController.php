@@ -12,7 +12,7 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route('/dishes')]
 class DishController extends AbstractController
 {
-    #[Route('/', name: 'dish_index', methods: ['GET'])]
+    #[Route('', name: 'dish_index', methods: ['GET'])]
     public function index(ManagerRegistry $doctrine): Response
     {
         $dishes = $doctrine->getRepository(Dish::class)->findAll();
@@ -30,15 +30,13 @@ class DishController extends AbstractController
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager = $doctrine->getManager();
-            $entityManager->persist($dish);
-            $entityManager->flush();
+            $em = $doctrine->getManager();
+            $em->persist($dish);
+            $em->flush();
             return $this->redirectToRoute('dish_index');
         }
 
-        return $this->render('dish/new.html.twig', [
-            'form' => $form->createView(),
-        ]);
+        return $this->render('dish/new.html.twig', ['form' => $form->createView()]);
     }
 
     #[Route('/{id}/edit', name: 'dish_edit', methods: ['GET', 'POST'])]
@@ -61,14 +59,36 @@ class DishController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/delete', name: 'dish_delete', methods: ['POST'])]
-    public function delete(Request $request, Dish $dish, ManagerRegistry $doctrine): Response
+    #[Route('/{id}', name: 'dish_delete_api', methods: ['DELETE'])]
+    public function deleteApi(Dish $dish, ManagerRegistry $doctrine): Response
     {
-        if ($this->isCsrfTokenValid('delete' . $dish->getId(), $request->request->get('_token'))) {
-            $entityManager = $doctrine->getManager();
-            $entityManager->remove($dish);
-            $entityManager->flush();
+        $em = $doctrine->getManager();
+        $em->remove($dish);
+        $em->flush();
+        return new Response(null, Response::HTTP_NO_CONTENT);
+    }
+
+    #[Route('/{id}', name: 'dish_update_api', methods: ['PUT'])]
+    public function updateApi(Request $request, Dish $dish, ManagerRegistry $doctrine): Response
+    {
+        $data = json_decode($request->getContent(), true);
+        $field = $data['field'] ?? null;
+        $value = $data['value'] ?? null;
+
+        if (!$field || !in_array($field, ['name', 'price'], true)) {
+            return new Response('Недопустимое поле', Response::HTTP_BAD_REQUEST);
         }
-        return $this->redirectToRoute('dish_index');
+
+        if ($field === 'price') {
+            $value = (string) $value;
+            if ((float) $value <= 0) {
+                return new Response('Цена должна быть больше 0', Response::HTTP_BAD_REQUEST);
+            }
+        }
+
+        $dish->$field = $value;
+        $doctrine->getManager()->flush();
+
+        return new Response('Успешно обновлено', Response::HTTP_OK);
     }
 }

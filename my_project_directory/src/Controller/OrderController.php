@@ -12,7 +12,7 @@ use Symfony\Component\Routing\Annotation\Route;
 #[Route('/orders')]
 class OrderController extends AbstractController
 {
-    #[Route('/', name: 'order_index', methods: ['GET'])]
+    #[Route('', name: 'order_index', methods: ['GET'])]
     public function index(ManagerRegistry $doctrine): Response
     {
         $orders = $doctrine->getRepository(Order::class)->findAll();
@@ -33,15 +33,13 @@ class OrderController extends AbstractController
 
         $form->handleRequest($request);
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager = $doctrine->getManager();
-            $entityManager->persist($order);
-            $entityManager->flush();
+            $em = $doctrine->getManager();
+            $em->persist($order);
+            $em->flush();
             return $this->redirectToRoute('order_index');
         }
 
-        return $this->render('order/new.html.twig', [
-            'form' => $form->createView(),
-        ]);
+        return $this->render('order/new.html.twig', ['form' => $form->createView()]);
     }
 
     #[Route('/{id}/edit', name: 'order_edit', methods: ['GET', 'POST'])]
@@ -67,14 +65,38 @@ class OrderController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}/delete', name: 'order_delete', methods: ['POST'])]
-    public function delete(Request $request, Order $order, ManagerRegistry $doctrine): Response
+    #[Route('/{id}', name: 'order_delete_api', methods: ['DELETE'])]
+    public function deleteApi(Order $order, ManagerRegistry $doctrine): Response
     {
-        if ($this->isCsrfTokenValid('delete' . $order->getId(), $request->request->get('_token'))) {
-            $entityManager = $doctrine->getManager();
-            $entityManager->remove($order);
-            $entityManager->flush();
+        $em = $doctrine->getManager();
+        $em->remove($order);
+        $em->flush();
+        return new Response(null, Response::HTTP_NO_CONTENT);
+    }
+
+    #[Route('/{id}', name: 'order_update_api', methods: ['PUT'])]
+    public function updateApi(Request $request, Order $order, ManagerRegistry $doctrine): Response
+    {
+        $data = json_decode($request->getContent(), true);
+        $field = $data['field'] ?? null;
+        $value = $data['value'] ?? null;
+
+        if ($field !== 'client') {
+            return new Response('Разрешено обновлять только поле "client"', Response::HTTP_BAD_REQUEST);
         }
-        return $this->redirectToRoute('order_index');
+
+        if (!is_numeric($value)) {
+            return new Response('ID клиента должен быть числом', Response::HTTP_BAD_REQUEST);
+        }
+
+        $client = $doctrine->getRepository(Client::class)->find($value);
+        if (!$client) {
+            return new Response('Клиент не найден', Response::HTTP_NOT_FOUND);
+        }
+
+        $order->setClient($client);
+        $doctrine->getManager()->flush();
+
+        return new Response('Успешно обновлено', Response::HTTP_OK);
     }
 }
