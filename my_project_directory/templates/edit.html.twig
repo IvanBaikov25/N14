@@ -1,0 +1,52 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ title|default('Редактирование') }}{% endblock %}
+
+{% block body %}
+    <a href="{{ backUrl }}" class="btn-back">← Назад</a>
+
+    {# Форма с эмуляцией PUT #}
+    <form method="POST">
+        <input type="hidden" name="_method" value="PUT">
+
+        {% for field in fields %}
+            <div class="form-group">
+                <label for="form_{{ field.name }}">{{ field.label }}:</label>
+
+                {% if field.type == 'text' or field.type == 'number' %}
+                    <input
+                        type="{{ field.type }}"
+                        id="form_{{ field.name }}"
+                        name="form[{{ field.name }}]"
+                        value="{{ field.value }}"
+                        {{ field.required ? 'required' : '' }}
+                        {{ field.step is defined ? 'step="' ~ field.step ~ '"' : '' }}
+                        {{ field.min is defined ? 'min="' ~ field.min ~ '"' : '' }}
+                    >
+                {% elseif field.type == 'select' %}
+                    <select id="form_{{ field.name }}" name="form[{{ field.name }}]" {{ field.required ? 'required' : '' }}>
+                        {% for option in field.options %}
+                            <option value="{{ option.value }}" {{ option.selected ? 'selected' : '' }}>
+                                {{ option.label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                {% elseif field.type == 'checkboxes' %}
+                    {% for option in field.options %}
+                        <label>
+                            <input
+                                type="checkbox"
+                                name="form[{{ field.name }}][]"
+                                value="{{ option.value }}"
+                                {{ option.checked ? 'checked' : '' }}
+                            >
+                            {{ option.label }}
+                        </label><br>
+                    {% endfor %}
+                {% endif %}
+            </div>
+        {% endfor %}
+
+        <button type="submit">{{ submitText|default('Сохранить') }}</button>
+    </form>
+{% endblock %}

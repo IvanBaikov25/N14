@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>🍽️ Админка — еда в деле!</title>
+    <title> Админка — еда в деле!</title>
     <style>
         body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; }
         section { margin-bottom: 40px; }
@@ -16,7 +16,7 @@
 </head>
 <body>
 
-<h1>🍽️ Админка — всё под рукой</h1>
+<h1> Админка — всё под рукой</h1>
 
 {% if errors %}
     <div class="error">
@@ -26,7 +26,7 @@
 
 <!-- КЛИЕНТЫ -->
 <section>
-    <h2>👥 Клиенты</h2>
+    <h2> Клиенты</h2>
     <form method="POST">
         <input type="text" name="client_name" placeholder="Имя *" required> 
         <input type="text" name="client_phone" placeholder="Телефон *" required>
@@ -45,7 +45,7 @@
 
 <!-- БЛЮДА -->
 <section>
-    <h2>🍲 Блюда</h2>
+    <h2> Блюда</h2>
     <form method="POST">
         <input type="text" name="dish_name" placeholder="Название *" required>
         <input type="number" step="0.01" name="dish_price" placeholder="Цена (>0) *" required min="0.01">
@@ -64,7 +64,7 @@
 
 <!-- ЗАКАЗЫ -->
 <section>
-    <h2>📦 Заказы</h2>
+    <h2> Заказы</h2>
     <form method="POST">
         <label>Клиент:</label>
         <select name="order_client" required>
@@ -87,7 +87,7 @@
         <br><br>
         <button type="submit" name="add_order"
             {% if not clients or not dishes %} disabled {% endif %}>
-            📥 Создать заказ
+            Создать заказ
         </button>
     </form>
 

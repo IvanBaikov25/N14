@@ -39,25 +39,31 @@ class ClientController extends AbstractController
         return $this->render('client/new.html.twig', ['form' => $form->createView()]);
     }
 
-    #[Route('/{id}/edit', name: 'client_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Client $client, ManagerRegistry $doctrine): Response
-    {
-        $form = $this->createFormBuilder($client)
-            ->add('name')
-            ->add('phone')
-            ->getForm();
+    #[Route('/{id}/edit', name: 'client_edit', methods: ['GET', 'PUT'])]
+public function edit(Request $request, Client $client, ManagerRegistry $doctrine): Response
+{
+    $form = $this->createFormBuilder($client, [
+        'method' => 'PUT', 
+    ])
+        ->add('name')
+        ->add('phone')
+        ->getForm();
 
-        $form->handleRequest($request);
+    if ($request->isMethod('PUT')) {
+        $data = $request->request->all();
+        $form->submit($data);
+
         if ($form->isSubmitted() && $form->isValid()) {
             $doctrine->getManager()->flush();
             return $this->redirectToRoute('client_index');
         }
-
-        return $this->render('client/edit.html.twig', [
-            'client' => $client,
-            'form' => $form->createView(),
-        ]);
     }
+
+    return $this->render('client/edit.html.twig', [
+        'client' => $client,
+        'form' => $form->createView(),
+    ]);
+}
 
     #[Route('/{id}', name: 'client_delete_api', methods: ['DELETE'])]
     public function deleteApi(Client $client, ManagerRegistry $doctrine): Response
@@ -68,20 +74,4 @@ class ClientController extends AbstractController
         return new Response(null, Response::HTTP_NO_CONTENT);
     }
 
-    #[Route('/{id}', name: 'client_update_api', methods: ['PUT'])]
-    public function updateApi(Request $request, Client $client, ManagerRegistry $doctrine): Response
-    {
-        $data = json_decode($request->getContent(), true);
-        $field = $data['field'] ?? null;
-        $value = $data['value'] ?? null;
-
-        if (!$field || !in_array($field, ['name', 'phone'], true)) {
-            return new Response('Недопустимое поле', Response::HTTP_BAD_REQUEST);
-        }
-
-        $client->$field = $value;
-        $doctrine->getManager()->flush();
-
-        return new Response('Успешно обновлено', Response::HTTP_OK);
-    }
 }

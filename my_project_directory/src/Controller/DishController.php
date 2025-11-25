@@ -39,26 +39,31 @@ class DishController extends AbstractController
         return $this->render('dish/new.html.twig', ['form' => $form->createView()]);
     }
 
-    #[Route('/{id}/edit', name: 'dish_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Dish $dish, ManagerRegistry $doctrine): Response
-    {
-        $form = $this->createFormBuilder($dish)
-            ->add('name')
-            ->add('price')
-            ->getForm();
+    #[Route('/{id}/edit', name: 'dish_edit', methods: ['GET', 'PUT'])]
+public function edit(Request $request, Dish $dish, ManagerRegistry $doctrine): Response
+{
+    $form = $this->createFormBuilder($dish, [
+        'method' => 'PUT',
+    ])
+        ->add('name')
+        ->add('price')
+        ->getForm();
 
-        $form->handleRequest($request);
+    if ($request->isMethod('PUT')) {
+        $data = $request->request->all();
+        $form->submit($data);
+
         if ($form->isSubmitted() && $form->isValid()) {
             $doctrine->getManager()->flush();
             return $this->redirectToRoute('dish_index');
         }
-
-        return $this->render('dish/edit.html.twig', [
-            'dish' => $dish,
-            'form' => $form->createView(),
-        ]);
     }
 
+    return $this->render('dish/edit.html.twig', [
+        'dish' => $dish,
+        'form' => $form->createView(),
+    ]);
+}
     #[Route('/{id}', name: 'dish_delete_api', methods: ['DELETE'])]
     public function deleteApi(Dish $dish, ManagerRegistry $doctrine): Response
     {
@@ -68,27 +73,4 @@ class DishController extends AbstractController
         return new Response(null, Response::HTTP_NO_CONTENT);
     }
 
-    #[Route('/{id}', name: 'dish_update_api', methods: ['PUT'])]
-    public function updateApi(Request $request, Dish $dish, ManagerRegistry $doctrine): Response
-    {
-        $data = json_decode($request->getContent(), true);
-        $field = $data['field'] ?? null;
-        $value = $data['value'] ?? null;
-
-        if (!$field || !in_array($field, ['name', 'price'], true)) {
-            return new Response('Недопустимое поле', Response::HTTP_BAD_REQUEST);
-        }
-
-        if ($field === 'price') {
-            $value = (string) $value;
-            if ((float) $value <= 0) {
-                return new Response('Цена должна быть больше 0', Response::HTTP_BAD_REQUEST);
-            }
-        }
-
-        $dish->$field = $value;
-        $doctrine->getManager()->flush();
-
-        return new Response('Успешно обновлено', Response::HTTP_OK);
-    }
 }

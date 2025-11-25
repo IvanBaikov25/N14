@@ -42,28 +42,34 @@ class OrderController extends AbstractController
         return $this->render('order/new.html.twig', ['form' => $form->createView()]);
     }
 
-    #[Route('/{id}/edit', name: 'order_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Order $order, ManagerRegistry $doctrine): Response
-    {
-        $form = $this->createFormBuilder($order)
-            ->add('client')
-            ->add('dishes', null, [
-                'expanded' => true,
-                'multiple' => true,
-            ])
-            ->getForm();
+    #[Route('/{id}/edit', name: 'order_edit', methods: ['GET', 'PUT'])]
+public function edit(Request $request, Order $order, ManagerRegistry $doctrine): Response
+{
+    $form = $this->createFormBuilder($order, [
+        'method' => 'PUT',
+    ])
+        ->add('client')
+        ->add('dishes', null, [
+            'expanded' => true,
+            'multiple' => true,
+        ])
+        ->getForm();
 
-        $form->handleRequest($request);
+    if ($request->isMethod('PUT')) {
+        $data = $request->request->all();
+        $form->submit($data);
+
         if ($form->isSubmitted() && $form->isValid()) {
             $doctrine->getManager()->flush();
             return $this->redirectToRoute('order_index');
         }
-
-        return $this->render('order/edit.html.twig', [
-            'order' => $order,
-            'form' => $form->createView(),
-        ]);
     }
+
+    return $this->render('order/edit.html.twig', [
+        'order' => $order,
+        'form' => $form->createView(),
+    ]);
+}
 
     #[Route('/{id}', name: 'order_delete_api', methods: ['DELETE'])]
     public function deleteApi(Order $order, ManagerRegistry $doctrine): Response
@@ -74,29 +80,4 @@ class OrderController extends AbstractController
         return new Response(null, Response::HTTP_NO_CONTENT);
     }
 
-    #[Route('/{id}', name: 'order_update_api', methods: ['PUT'])]
-    public function updateApi(Request $request, Order $order, ManagerRegistry $doctrine): Response
-    {
-        $data = json_decode($request->getContent(), true);
-        $field = $data['field'] ?? null;
-        $value = $data['value'] ?? null;
-
-        if ($field !== 'client') {
-            return new Response('Разрешено обновлять только поле "client"', Response::HTTP_BAD_REQUEST);
-        }
-
-        if (!is_numeric($value)) {
-            return new Response('ID клиента должен быть числом', Response::HTTP_BAD_REQUEST);
-        }
-
-        $client = $doctrine->getRepository(Client::class)->find($value);
-        if (!$client) {
-            return new Response('Клиент не найден', Response::HTTP_NOT_FOUND);
-        }
-
-        $order->setClient($client);
-        $doctrine->getManager()->flush();
-
-        return new Response('Успешно обновлено', Response::HTTP_OK);
-    }
 }
