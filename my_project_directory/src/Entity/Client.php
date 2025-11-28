@@ -1,26 +1,23 @@
 <?php
-
 namespace App\Entity;
-
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ORM\Entity(repositoryClass: 'App\Repository\ClientRepository')]
+#[ORM\Entity]
 class Client
 {
-    #[ORM\Id]
-    #[ORM\GeneratedValue]
-    #[ORM\Column(type: 'integer')]
+    #[ORM\Id, ORM\GeneratedValue, ORM\Column]
     private ?int $id = null;
 
-    #[ORM\Column(type: 'string', length: 255)]
-    #[Assert\NotBlank(message: "Имя обязательно")]
+    #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
     private string $name;
 
-    #[ORM\Column(type: 'string', length: 20)]
-    #[Assert\NotBlank(message: "Телефон обязателен")]
+    #[ORM\Column(length: 20)]
+    #[Assert\NotBlank]
     private string $phone;
 
+    // getters & setters
     public function getId(): ?int
     {
         return $this->id;
